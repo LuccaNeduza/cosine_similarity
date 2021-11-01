@@ -1,0 +1,64 @@
+# Importação das Bibliotecas
+import requests
+import re
+from bs4 import BeautifulSoup
+from string import punctuation
+import matplotlib.pyplot as plt
+import nltk
+nltk.download('stopwords')
+from nltk.corpus import PlaintextCorpusReader
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+import numpy as np
+
+page1 = requests.get("https://www.investopedia.com/updates/adam-smith-wealth-of-nations/")
+soup1 = BeautifulSoup(page1.content, 'html.parser')
+html1 = list(soup1.children)[2]
+body1 = list(html1.children)[3]
+p1 = list(body1.children)[1]
+size1 = len(soup1.find_all('p'))
+palavras1 = " "
+for i in range(size1):
+    words1 = soup1.find_all('p')[i].get_text()
+    palavras1 = palavras1 + words1
+    
+# Parser do site Investopedia - Mises'
+page2 = requests.get("https://www.investopedia.com/terms/l/ludwig-von-mises.asp")
+soup2 = BeautifulSoup(page2.content, 'html.parser')
+html2 = list(soup2.children)[2]
+body2 = list(html2.children)[3]
+p2 = list(body2.children)[1]
+size2 = len(soup2.find_all('p'))
+palavras2 = " "
+for i in range(size2):
+    words2 = soup2.find_all('p')[i].get_text()
+    palavras2 = palavras2 + words2
+    
+# Pré-processamento do do site Investopedia - Adam Smith
+text = palavras1.lower()  # Lowercase text
+text = re.sub(r"<.*?>", " ", text)  # remove all html tags
+text = re.sub(r"\b[0-9]+\b\s*", "", text)  # remove numbers
+text = " ".join([w for w in text.split() if not w.isdigit()])  # remove digits
+# text = re.sub(r"<a[^>]*>(.*?)</a>", r"\1", text)  # remove just tags
+text = re.sub(r"https?://\S+", "", text)  # remove hiperlinks
+text = re.sub(f"[{re.escape(punctuation)}]", "", text)  # Remove punctuation
+text = " ".join(text.split())  # Remove extra spaces, tabs, and new lines
+text = text.split(" ")
+
+# Pré-processamento do do site Investopedia - Mises'
+text2 = palavras2.lower()  # Lowercase text
+text2 = re.sub(r"<.*?>", " ", text2)  # remove all html tags
+text2 = re.sub(r"\b[0-9]+\b\s*", "", text2)  # remove numbers
+text2 = " ".join([w for w in text2.split() if not w.isdigit()])  # remove digits
+# text = re.sub(r"<a[^>]*>(.*?)</a>", r"\1", text)  # remove just tags
+text2 = re.sub(r"https?://\S+", "", text2)  # remove hiperlinks
+text2 = re.sub(f"[{re.escape(punctuation)}]", "", text2)  # Remove punctuation
+text2 = " ".join(text2.split())  # Remove extra spaces, tabs, and new lines
+text2 = text2.split(" ")
+
+# Vetorização
+vetor = TfidfVectorizer(min_df=1, stop_words="english")
+tfidf = vetor.fit_transform(text, text2)
+coef_similaridade = tfidf * tfidf.T
+arr = coef_similaridade.toarray()
+print(arr)
